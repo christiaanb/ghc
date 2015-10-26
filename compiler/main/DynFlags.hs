@@ -3238,7 +3238,9 @@ default_PIC platform =
     _                      -> []
 
 impliedGFlags :: [(GeneralFlag, TurnOnFlag, GeneralFlag)]
-impliedGFlags = [(Opt_DeferTypeErrors, turnOn, Opt_DeferTypedHoles)]
+impliedGFlags = [(Opt_DeferTypeErrors, turnOn, Opt_DeferTypedHoles)
+                ,(Opt_Strictness, turnOn, Opt_WorkerWrapper)
+                ]
 
 impliedXFlags :: [(ExtensionFlag, TurnOnFlag, ExtensionFlag)]
 impliedXFlags

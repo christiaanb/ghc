@@ -103,7 +103,8 @@ Compiler
    old ``-fcpr-off`` behaviour.
 
 -  Added the option ``-fworker-wrapper``. When enabled, the worker-wrapper
-   transformation is performed. It is implied by ``-O``.
+   transformation is performed. It is implied by ``-O`` and by 
+   ``-fstrictness``.
 
 GHCi
 ~~~~
