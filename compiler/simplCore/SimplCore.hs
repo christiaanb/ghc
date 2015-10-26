@@ -188,7 +188,7 @@ getCoreToDo dflags
                           -- Don't do case-of-case transformations.
                           -- This makes full laziness work better
 
-    strictness_pass = if ww_on 
+    strictness_pass = if ww_on
                        then [CoreDoStrictness,CoreDoWorkerWrapper]
                        else [CoreDoStrictness]
 
