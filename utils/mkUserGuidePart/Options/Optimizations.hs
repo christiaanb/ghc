@@ -341,4 +341,10 @@ optimizationsOptions =
          , flagType = DynamicFlag
          , flagReverse = "-fno-vectorise"
          }
+  , flag { flagName = "-fworker-wrapper"
+         , flagDescription =
+           "Enable the worker-wrapper transformation. Implied by ``-O``."
+         , flagType = DynamicFlag
+         , flagReverse = "-fno-worker-wrapper"
+         }
   ]

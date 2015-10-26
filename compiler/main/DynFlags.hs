@@ -374,6 +374,7 @@ data GeneralFlag
    | Opt_DmdTxDictSel              -- use a special demand transformer for dictionary selectors
    | Opt_Loopification                  -- See Note [Self-recursive tail calls]
    | Opt_CprAnal
+   | Opt_WorkerWrapper
 
    -- Interface files
    | Opt_IgnoreInterfacePragmas
@@ -2995,7 +2996,8 @@ fFlags = [
   flagSpec "unbox-small-strict-fields"        Opt_UnboxSmallStrictFields,
   flagSpec "unbox-strict-fields"              Opt_UnboxStrictFields,
   flagSpec "vectorisation-avoidance"          Opt_VectorisationAvoidance,
-  flagSpec "vectorise"                        Opt_Vectorise
+  flagSpec "vectorise"                        Opt_Vectorise,
+  flagSpec "worker-wrapper"                   Opt_WorkerWrapper
   ]
 
 -- | These @-f\<blah\>@ flags can all be reversed with @-fno-\<blah\>@
@@ -3330,6 +3332,7 @@ optLevelFlags -- see Note [Documenting optimisation flags]
     , ([1,2],   Opt_Strictness)
     , ([1,2],   Opt_UnboxSmallStrictFields)
     , ([1,2],   Opt_CprAnal)
+    , ([1,2],   Opt_WorkerWrapper)
 
     , ([2],     Opt_LiberateCase)
     , ([2],     Opt_SpecConstr)
