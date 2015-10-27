@@ -344,8 +344,11 @@ optimizationsOptions =
          }
   , flag { flagName = "-fworker-wrapper"
          , flagDescription =
-           "Enable the worker-wrapper transformation. Implied by ``-O``," ++
-           " and by ``-fstrictness``."
+           "Enable the worker-wrapper transformation after a strictness" ++
+           " analysis pass. Implied by ``-O``, and by ``-fstrictness``." ++
+           " Disabled by ``-fno-strictness``. Enabling ``-fworker-wrapper``" ++
+           " while strictness analysis is disabled (by ``-fno-strictness``)" ++
+           " has no effect."
          , flagType = DynamicFlag
          , flagReverse = "-fno-worker-wrapper"
          }
