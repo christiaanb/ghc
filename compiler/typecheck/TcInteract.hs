@@ -52,7 +52,7 @@ import SrcLoc
 import VarEnv
 
 import Control.Monad
-import Maybes( isJust )
+import Maybes( fromMaybe, isJust )
 import Pair (Pair(..))
 import Unique( hasKey )
 import DynFlags
@@ -146,7 +146,7 @@ solveSimpleGivens givens
        ; go givens
        ; traceTcS "End solveSimpleGivens }" empty }
   where
-    go givens = do { solveSimples (listToBag givens)
+    go givens = do { solveSimples Nothing (listToBag givens)
                    ; new_givens <- runTcPluginsGiven
                    ; when (notNull new_givens) $
                      go new_givens }
@@ -177,25 +177,41 @@ solveSimpleWanteds simples
 
      | otherwise
      = do { -- Solve
-            (unif_count, wc1) <- solve_simple_wanteds wc
+            (unif_count, wc1) <- solve_simple_wanteds Nothing wc
 
             -- Run plugins
           ; (rerun_plugin, wc2) <- runTcPluginsWanted wc1
              -- See Note [Running plugins on unflattened wanteds]
 
           ; if unif_count == 0 && not rerun_plugin
-            then return (n, wc2)             -- Done
+            then do { plugins <- getTcPlugins
+                    ; if null plugins
+                      then return (n, wc2)
+                      else do { let pipeline = [("canonicalization", TcCanonical.canonicalize)]
+                              ; (_, wc3) <- solve_simple_wanteds (Just pipeline) wc2
+                              -- Constraints are zonked before being passed to
+                              -- the plugin. Zonking however makes all
+                              -- constraints NonCanonical, which means some
+                              -- type checker passes wont't pick up those
+                              -- constraints anymore; this leads to situations
+                              -- such as #11525.
+                              --
+                              -- So before returning the wanted constraints,
+                              -- we run one more canonicalisation pass.
+                              ; return (n, wc3) } } -- Done
             else do { traceTcS "solveSimple going round again:" $
                       ppr unif_count $$ ppr rerun_plugin
                     ; go (n+1) limit wc2 } }      -- Loop
 
 
-solve_simple_wanteds :: WantedConstraints -> TcS (Int, WantedConstraints)
+solve_simple_wanteds :: Maybe [(String,SimplifierStage)]
+                     -> WantedConstraints
+                     -> TcS (Int, WantedConstraints)
 -- Try solving these constraints
 -- Affects the unification state (of course) but not the inert set
-solve_simple_wanteds (WC { wc_simple = simples1, wc_insol = insols1, wc_impl = implics1 })
+solve_simple_wanteds pipelineM (WC { wc_simple = simples1, wc_insol = insols1, wc_impl = implics1 })
   = nestTcS $
-    do { solveSimples simples1
+    do { solveSimples pipelineM simples1
        ; (implics2, tv_eqs, fun_eqs, insols2, others) <- getUnsolvedInerts
        ; (unif_count, unflattened_eqs) <- reportUnifications $
                                           unflatten tv_eqs fun_eqs
@@ -222,12 +238,12 @@ See Note [Unflattening can force the solver to iterate]
 
 -- The main solver loop implements Note [Basic Simplifier Plan]
 ---------------------------------------------------------------
-solveSimples :: Cts -> TcS ()
+solveSimples :: Maybe [(String,SimplifierStage)] -> Cts -> TcS ()
 -- Returns the final InertSet in TcS
 -- Has no effect on work-list or residual-implications
 -- The constraints are initially examined in left-to-right order
 
-solveSimples cts
+solveSimples pipelineM cts
   = {-# SCC "solveSimples" #-}
     do { updWorkListTcS (\wl -> foldrBag extendWorkListCt wl cts)
        ; solve_loop }
@@ -237,7 +253,7 @@ solveSimples cts
         do { sel <- selectNextWorkItem
            ; case sel of
               Nothing -> return ()
-              Just ct -> do { runSolverPipeline thePipeline ct
+              Just ct -> do { runSolverPipeline (fromMaybe thePipeline pipelineM) ct
                             ; solve_loop } }
 
 -- | Extract the (inert) givens and invoke the plugins on them.
